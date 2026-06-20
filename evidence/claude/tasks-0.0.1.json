@@ -1,0 +1,71 @@
+{
+  "version": "0.0.1",
+  "tasks": [
+    {
+      "id": "T1",
+      "description": "项目骨架搭建：创建 requirements.txt（Flask, Flask-SQLAlchemy, Flask-Login, bcrypt, Werkzeug）、config.py（SECRET_KEY, SQLALCHEMY_DATABASE_URI, UPLOAD_FOLDER, MAX_CONTENT_LENGTH=10MB）、创建 uploads/ 和 templates/ 及子目录结构",
+      "depends_on": [],
+      "acceptance": "requirements.txt 可成功 pip install；config.py 包含所有必需配置项；目录结构符合技术方案定义"
+    },
+    {
+      "id": "T2",
+      "description": "数据模型定义：编写 models.py，包含 User（Flask-Login UserMixin, bcrypt 密码哈希）、Contract（关联 User）、Attachment（关联 Contract, ON DELETE CASCADE）三个 SQLAlchemy 模型",
+      "depends_on": ["T1"],
+      "acceptance": "三个模型定义完整，包含所有字段、约束和关系；User 模型实现 set_password/check_password 方法；从 Python 可正常导入且无语法错误"
+    },
+    {
+      "id": "T3",
+      "description": "Flask 应用初始化：编写 app.py 骨架，创建 Flask 实例、配置 SQLAlchemy、注册蓝图（url_prefix=/projects/contract-admin）、初始化 Flask-Login（user_loader）、配置应用上下文（含 after_request 钩子注入 Cache-Control: no-cache 头）",
+      "depends_on": ["T1", "T2"],
+      "acceptance": "app.py 可启动（flask run），监听端口 5301；访问 /projects/contract-admin/healthz 返回 200；应用不报导入错误"
+    },
+    {
+      "id": "T4",
+      "description": "基础模板与静态资源：编写 templates/base.html（导航栏、flash 消息、内容块、静态资源引用均使用 /projects/contract-admin/static/ 前缀 + ?v=0.0.1 版本令牌）、static/css/style.css（基础样式：表格、表单、按钮、导航）、static/js/main.js（前端确认对话框等基础交互）",
+      "depends_on": ["T3"],
+      "acceptance": "访问任意页面时静态资源 URL 包含 /projects/contract-admin/static/ 前缀和 ?v=0.0.1 版本令牌；HTML 响应包含 Cache-Control: no-cache 头；base.html 可被其他模板正常继承"
+    },
+    {
+      "id": "T5",
+      "description": "用户认证功能：实现 /login、/register、/logout 路由，编写 templates/login.html 和 templates/register.html（继承 base.html），密码使用 bcrypt 哈希存储，登录后 session 由 Flask-Login 管理",
+      "depends_on": ["T3", "T4"],
+      "acceptance": "用户可注册新账号（用户名+密码）；注册后可用同一凭据登录；登录后访问受保护页面正常；登出后无法访问受保护页面；密码以哈希形式存储在数据库中"
+    },
+    {
+      "id": "T6",
+      "description": "仪表盘页面：实现 /dashboard 路由，编写 templates/dashboard.html，展示系统概览（用户总数、合同总数、按状态统计合同数、最近创建的合同列表）",
+      "depends_on": ["T3", "T4", "T5"],
+      "acceptance": "登录后可访问仪表盘；仪表盘正确显示用户数和合同数统计；未登录访问 /dashboard 被重定向到登录页"
+    },
+    {
+      "id": "T7",
+      "description": "用户管理 CRUD：实现 /users（列表）、/users/create（创建）、/users/<id>/edit（编辑）、/users/<id>/delete（删除）路由，编写 templates/users/list.html 和 templates/users/form.html，支持修改用户名、密码（可选）、角色",
+      "depends_on": ["T3", "T4", "T5"],
+      "acceptance": "可查看所有用户列表；可创建新用户；可编辑现有用户（用户名、角色）；可删除用户（不能删除自己）；操作后 flash 消息正常显示"
+    },
+    {
+      "id": "T8",
+      "description": "合同管理 CRUD：实现 /contracts（列表）、/contracts/create（创建）、/contracts/<id>（详情）、/contracts/<id>/edit（编辑）、/contracts/<id>/delete（删除）路由，编写 templates/contracts/list.html、templates/contracts/form.html、templates/contracts/detail.html，合同字段包含名称、编号、金额、签约日期、状态",
+      "depends_on": ["T3", "T4", "T5", "T7"],
+      "acceptance": "可查看所有合同列表；可创建新合同（含所有字段）；可查看合同详情；可编辑合同（含状态变更）；可删除合同；合同列表显示创建者信息"
+    },
+    {
+      "id": "T9",
+      "description": "附件上传、下载与在线查看：实现 /contracts/<id>/attachments/upload（上传，仅允许 .pdf/.doc/.docx，限制 10MB）、/contracts/<id>/attachments/<aid>/download（下载）、/contracts/<id>/attachments/<aid>/view（在线查看）路由；上传文件以 UUID 重命名存储，MIME 类型正确设置",
+      "depends_on": ["T8"],
+      "acceptance": "可上传 PDF/Word 文件到合同；超过 10MB 或非允许格式的文件被拒绝；可从合同详情页下载附件；PDF 附件可在线查看（inline）；附件与合同关联正确"
+    },
+    {
+      "id": "T10",
+      "description": "数据库初始化脚本：编写 init_db.py，创建所有表结构，插入默认管理员账号（用户名: demo, 密码: demo123, 角色: admin），脚本可通过 python init_db.py 运行",
+      "depends_on": ["T1", "T2"],
+      "acceptance": "运行 init_db.py 后 SQLite 数据库文件生成（instance/contract_admin.db）；users 表包含 demo 管理员；contracts 和 attachments 表已创建；demo/demo123 可成功登录"
+    },
+    {
+      "id": "T11",
+      "description": "静态资源版本令牌与 HTTP 头最终验证：确保所有模板中静态资源引用均带 ?v=0.0.1，所有 HTML 响应带 Cache-Control: no-cache HTTP 头（非 meta 标签）；healthz 端点可公开访问不要求认证",
+      "depends_on": ["T4", "T5", "T6", "T7", "T8", "T9"],
+      "acceptance": "curl -I 任意页面返回 Cache-Control: no-cache 头；页面源码中所有 /static/ 引用均带 ?v=0.0.1；/projects/contract-admin/healthz 返回 200 且无需登录"
+    }
+  ]
+}

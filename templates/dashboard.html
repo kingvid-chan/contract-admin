@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}仪表盘 - 合同管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>📊 仪表盘</h1>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <span class="stat-number">{{ user_count }}</span>
+        <span class="stat-label">系统用户</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ contract_count }}</span>
+        <span class="stat-label">合同总数</span>
+    </div>
+    <div class="stat-card stat-draft">
+        <span class="stat-number">{{ status_counts.draft }}</span>
+        <span class="stat-label">草稿</span>
+    </div>
+    <div class="stat-card stat-active">
+        <span class="stat-number">{{ status_counts.active }}</span>
+        <span class="stat-label">执行中</span>
+    </div>
+    <div class="stat-card stat-completed">
+        <span class="stat-number">{{ status_counts.completed }}</span>
+        <span class="stat-label">已完成</span>
+    </div>
+    <div class="stat-card stat-terminated">
+        <span class="stat-number">{{ status_counts.terminated }}</span>
+        <span class="stat-label">已终止</span>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>🕐 最近合同</h2>
+        <a href="{{ url_for('main.contract_create_form') }}" class="btn btn-primary btn-sm">+ 新建合同</a>
+    </div>
+    {% if recent_contracts %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>合同编号</th>
+                    <th>合同名称</th>
+                    <th>金额</th>
+                    <th>状态</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in recent_contracts %}
+                <tr>
+                    <td>{{ c.contract_number }}</td>
+                    <td>{{ c.name }}</td>
+                    <td>{% if c.amount is not none %}¥{{ "%.2f"|format(c.amount) }}{% else %}-{% endif %}</td>
+                    <td><span class="status-badge status-{{ c.status }}">{{ c.status }}</span></td>
+                    <td>{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <a href="{{ url_for('main.contract_detail', id=c.id) }}" class="btn btn-sm btn-primary">查看</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>还没有合同数据</p>
+        <a href="{{ url_for('main.contract_create_form') }}" class="btn btn-primary">创建第一个合同</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

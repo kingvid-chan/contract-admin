@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}合同管理 - 合同管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>📄 合同管理</h1>
+    <a href="{{ url_for('main.contract_create_form') }}" class="btn btn-primary">+ 新建合同</a>
+</div>
+
+<div class="card">
+    {% if contracts %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>合同编号</th>
+                    <th>合同名称</th>
+                    <th>金额</th>
+                    <th>签约日期</th>
+                    <th>状态</th>
+                    <th>创建者</th>
+                    <th>更新时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in contracts %}
+                <tr>
+                    <td><strong>{{ c.contract_number }}</strong></td>
+                    <td>{{ c.name }}</td>
+                    <td>{% if c.amount is not none %}¥{{ "%.2f"|format(c.amount) }}{% else %}-{% endif %}</td>
+                    <td>{% if c.signing_date %}{{ c.signing_date.strftime('%Y-%m-%d') }}{% else %}-{% endif %}</td>
+                    <td><span class="status-badge status-{{ c.status }}">{{ c.status }}</span></td>
+                    <td>{{ c.creator.username }}</td>
+                    <td>{{ c.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{{ url_for('main.contract_detail', id=c.id) }}" class="btn btn-sm btn-primary">查看</a>
+                            <a href="{{ url_for('main.contract_edit_form', id=c.id) }}" class="btn btn-sm btn-warning">编辑</a>
+                            <form method="POST" action="{{ url_for('main.contract_delete', id=c.id) }}"
+                                  style="display:inline"
+                                  onsubmit="return confirm('确定要删除合同「{{ c.name }}」吗？此操作将同时删除所有附件，且不可撤销。');">
+                                <button type="submit" class="btn btn-sm btn-danger">删除</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>暂无合同数据</p>
+        <a href="{{ url_for('main.contract_create_form') }}" class="btn btn-primary">创建第一个合同</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

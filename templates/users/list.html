@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}用户管理 - 合同管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>👥 用户管理</h1>
+    <a href="{{ url_for('main.user_create_form') }}" class="btn btn-primary">+ 新建用户</a>
+</div>
+
+<div class="card">
+    {% if users %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>用户名</th>
+                    <th>角色</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>{{ u.id }}</td>
+                    <td>{{ u.username }}</td>
+                    <td><span class="role-badge role-{{ u.role }}">{{ u.role }}</span></td>
+                    <td>{{ u.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{{ url_for('main.user_edit_form', id=u.id) }}" class="btn btn-sm btn-warning">编辑</a>
+                            {% if u.id != current_user.id %}
+                            <form method="POST" action="{{ url_for('main.user_delete', id=u.id) }}"
+                                  style="display:inline"
+                                  onsubmit="return confirm('确定要删除用户「{{ u.username }}」吗？此操作不可撤销。');">
+                                <button type="submit" class="btn btn-sm btn-danger">删除</button>
+                            </form>
+                            {% else %}
+                            <span class="text-muted text-sm">当前用户</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>暂无用户数据</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

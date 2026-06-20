@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}合同管理系统{% endblock %}</title>
+    <link rel="stylesheet" href="/projects/contract-admin/static/css/style.css?v=0.0.1">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('main.dashboard') }}" class="nav-brand">📋 合同管理系统</a>
+            {% if current_user.is_authenticated %}
+            <ul class="nav-links">
+                <li><a href="{{ url_for('main.dashboard') }}">仪表盘</a></li>
+                <li><a href="{{ url_for('main.contract_list') }}">合同管理</a></li>
+                <li><a href="{{ url_for('main.user_list') }}">用户管理</a></li>
+                <li class="nav-user">
+                    <span class="nav-username">{{ current_user.username }}
+                        <span class="role-badge role-{{ current_user.role }}">{{ current_user.role }}</span>
+                    </span>
+                    <a href="{{ url_for('main.logout') }}" class="btn-logout">退出</a>
+                </li>
+            </ul>
+            {% else %}
+            <ul class="nav-links">
+                <li><a href="{{ url_for('main.login_form') }}">登录</a></li>
+                <li><a href="{{ url_for('main.register_form') }}">注册</a></li>
+            </ul>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main class="main-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}
+        {{ content|safe if content else '' }}
+        {% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>合同管理系统 v0.0.1 &copy; {{ now.year if now else '2026' }}</p>
+    </footer>
+
+    <script src="/projects/contract-admin/static/js/main.js?v=0.0.1"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

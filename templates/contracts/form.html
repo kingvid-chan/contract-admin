@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% if form_action == 'create' %}
+    {% set page_title = '新建合同' %}
+    {% set submit_text = '创建合同' %}
+    {% set form_url = url_for('main.contract_create') %}
+{% else %}
+    {% set page_title = '编辑合同' %}
+    {% set submit_text = '保存修改' %}
+    {% set form_url = url_for('main.contract_edit', id=contract.id) %}
+{% endif %}
+{% block title %}{{ page_title }} - 合同管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ page_title }}</h1>
+    <a href="{{ url_for('main.contract_list') }}" class="btn btn-secondary">← 返回列表</a>
+</div>
+
+<div class="card" style="max-width: 640px;">
+    <form method="POST" action="{{ form_url }}">
+        <div class="form-group">
+            <label for="name">合同名称 <span style="color:red">*</span></label>
+            <input type="text" id="name" name="name" class="form-control"
+                   value="{{ contract.name if contract else '' }}"
+                   placeholder="请输入合同名称" required autofocus>
+        </div>
+
+        <div class="form-group">
+            <label for="contract_number">合同编号 <span style="color:red">*</span></label>
+            <input type="text" id="contract_number" name="contract_number" class="form-control"
+                   value="{{ contract.contract_number if contract else '' }}"
+                   placeholder="唯一编号，如 CON-2026-001" required>
+        </div>
+
+        <div class="form-group">
+            <label for="amount">合同金额</label>
+            <input type="number" id="amount" name="amount" class="form-control"
+                   step="0.01" min="0"
+                   value="{{ contract.amount if contract and contract.amount is not none else '' }}"
+                   placeholder="请输入合同金额">
+        </div>
+
+        <div class="form-group">
+            <label for="signing_date">签约日期</label>
+            <input type="date" id="signing_date" name="signing_date" class="form-control"
+                   value="{{ contract.signing_date.strftime('%Y-%m-%d') if contract and contract.signing_date else '' }}">
+        </div>
+
+        <div class="form-group">
+            <label for="status">合同状态 <span style="color:red">*</span></label>
+            <select id="status" name="status" class="form-control" required>
+                {% set current_status = contract.status if contract else 'draft' %}
+                <option value="draft" {% if current_status == 'draft' %}selected{% endif %}>draft（草稿）</option>
+                <option value="active" {% if current_status == 'active' %}selected{% endif %}>active（执行中）</option>
+                <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>completed（已完成）</option>
+                <option value="terminated" {% if current_status == 'terminated' %}selected{% endif %}>terminated（已终止）</option>
+            </select>
+        </div>
+
+        <div class="btn-group mt-2">
+            <button type="submit" class="btn btn-primary">{{ submit_text }}</button>
+            <a href="{{ url_for('main.contract_list') }}" class="btn btn-secondary">取消</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
