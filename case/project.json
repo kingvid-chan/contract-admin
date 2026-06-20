@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "name": "合同管理系统",
+  "slug": "contract-admin",
+  "local_path": "/Users/chenqingwei/外部需求/proj-3cb594",
+  "github_url": "https://github.com/kingvid-chan/contract-admin",
+  "preview": {
+    "server": "aliyun-cowork",
+    "deploy_root": "/srv/codingagent/contract-admin",
+    "service_name": "codingagent-contract-admin",
+    "port": 5301,
+    "base_path": "/projects/contract-admin/",
+    "public_url": "http://120.24.117.67/projects/contract-admin/",
+    "health_path": "/projects/contract-admin/healthz"
+  }
+}
