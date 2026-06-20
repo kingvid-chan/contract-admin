@@ -9,3 +9,5 @@ node_modules/
 dist/
 process-log/
 .paused
+instance/
+uploads/*

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% if form_action == 'create' %}
+    {% set page_title = '新建用户' %}
+    {% set submit_text = '创建用户' %}
+    {% set form_url = url_for('main.user_create') %}
+{% else %}
+    {% set page_title = '编辑用户' %}
+    {% set submit_text = '保存修改' %}
+    {% set form_url = url_for('main.user_edit', id=user.id) %}
+{% endif %}
+{% block title %}{{ page_title }} - 合同管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ page_title }}</h1>
+    <a href="{{ url_for('main.user_list') }}" class="btn btn-secondary">← 返回列表</a>
+</div>
+
+<div class="card" style="max-width: 560px;">
+    <form method="POST" action="{{ form_url }}">
+        <div class="form-group">
+            <label for="username">用户名 <span style="color:red">*</span></label>
+            <input type="text" id="username" name="username" class="form-control"
+                   value="{{ user.username if user else '' }}"
+                   placeholder="至少2个字符" required autofocus>
+        </div>
+
+        <div class="form-group">
+            <label for="password">
+                密码
+                {% if form_action == 'create' %}<span style="color:red">*</span>{% endif %}
+                {% if form_action == 'edit' %}<span class="form-hint">（留空则不修改密码）</span>{% endif %}
+            </label>
+            <input type="password" id="password" name="password" class="form-control"
+                   placeholder="{% if form_action == 'create' %}至少6个字符{% else %}新密码（至少6个字符）{% endif %}"
+                   {% if form_action == 'create' %}required{% endif %}>
+        </div>
+
+        <div class="form-group">
+            <label for="role">角色 <span style="color:red">*</span></label>
+            <select id="role" name="role" class="form-control" required>
+                <option value="user" {% if user and user.role == 'user' %}selected{% endif %}>user（普通用户）</option>
+                <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>admin（管理员）</option>
+            </select>
+        </div>
+
+        <div class="btn-group mt-2">
+            <button type="submit" class="btn btn-primary">{{ submit_text }}</button>
+            <a href="{{ url_for('main.user_list') }}" class="btn btn-secondary">取消</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

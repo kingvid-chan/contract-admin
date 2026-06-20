@@ -1,0 +1,162 @@
+{
+  "version": "0.0.1",
+  "architecture": {
+    "style": "Flask 单体应用 + Jinja2 服务端渲染",
+    "base_path": "/projects/contract-admin/",
+    "port": 5301,
+    "application_pattern": "单文件入口 (app.py)，蓝图组织路由",
+    "blueprint": {
+      "name": "main_bp",
+      "url_prefix": "/projects/contract-admin",
+      "description": "所有业务路由注册在此蓝图下，统一使用 /projects/contract-admin/ 前缀"
+    },
+    "auth": {
+      "library": "Flask-Login",
+      "method": "服务端 Session（Cookie-based）",
+      "password_hashing": "bcrypt（通过 flask-bcrypt 或 bcrypt 库）",
+      "session_protection": "strong"
+    },
+    "orm": {
+      "library": "Flask-SQLAlchemy",
+      "database": "SQLite",
+      "database_file": "instance/contract_admin.db"
+    },
+    "file_upload": {
+      "library": "Werkzeug (Flask 内置)",
+      "upload_dir": "uploads/",
+      "max_size_bytes": 10485760,
+      "allowed_extensions": [".pdf", ".doc", ".docx"],
+      "storage_strategy": "本地文件系统，文件名使用 UUID 防冲突"
+    },
+    "templating": {
+      "engine": "Jinja2",
+      "base_template": "templates/base.html",
+      "static_url_prefix": "/projects/contract-admin/static/",
+      "cache_busting": "?v=0.0.1"
+    },
+    "http_headers": {
+      "Cache-Control": "no-cache",
+      "description": "所有 HTML 响应必须由服务器下发 Cache-Control: no-cache 头，不得使用 <meta> 标签代替"
+    },
+    "deployment": {
+      "server": "阿里云 ECS",
+      "service_manager": "systemd",
+      "service_name": "codingagent-contract-admin",
+      "deploy_root": "/srv/codingagent/contract-admin",
+      "wsgi": "Gunicorn（生产环境）",
+      "reverse_proxy": "Nginx 反向代理到 localhost:5301"
+    }
+  },
+  "data_models": {
+    "User": {
+      "table": "users",
+      "columns": {
+        "id": {"type": "Integer", "constraints": "PRIMARY KEY, AUTOINCREMENT"},
+        "username": {"type": "String(80)", "constraints": "UNIQUE, NOT NULL"},
+        "password_hash": {"type": "String(200)", "constraints": "NOT NULL"},
+        "role": {"type": "String(20)", "constraints": "NOT NULL, DEFAULT 'user'", "values": ["admin", "user"]},
+        "created_at": {"type": "DateTime", "constraints": "NOT NULL, DEFAULT CURRENT_TIMESTAMP"}
+      },
+      "relationships": {
+        "contracts": "one-to-many → Contract.created_by"
+      },
+      "flask_login_mixin": true,
+      "methods": ["set_password(password)", "check_password(password)", "is_admin()"]
+    },
+    "Contract": {
+      "table": "contracts",
+      "columns": {
+        "id": {"type": "Integer", "constraints": "PRIMARY KEY, AUTOINCREMENT"},
+        "name": {"type": "String(200)", "constraints": "NOT NULL"},
+        "contract_number": {"type": "String(100)", "constraints": "UNIQUE, NOT NULL"},
+        "amount": {"type": "Float", "constraints": "NULLABLE"},
+        "signing_date": {"type": "Date", "constraints": "NULLABLE"},
+        "status": {"type": "String(50)", "constraints": "NOT NULL, DEFAULT 'draft'", "values": ["draft", "active", "completed", "terminated"]},
+        "created_by": {"type": "Integer", "constraints": "FOREIGN KEY → users.id, NOT NULL"},
+        "created_at": {"type": "DateTime", "constraints": "NOT NULL, DEFAULT CURRENT_TIMESTAMP"},
+        "updated_at": {"type": "DateTime", "constraints": "NOT NULL, DEFAULT CURRENT_TIMESTAMP, ON UPDATE CURRENT_TIMESTAMP"}
+      },
+      "relationships": {
+        "creator": "many-to-one → User",
+        "attachments": "one-to-many → Attachment, cascade delete"
+      }
+    },
+    "Attachment": {
+      "table": "attachments",
+      "columns": {
+        "id": {"type": "Integer", "constraints": "PRIMARY KEY, AUTOINCREMENT"},
+        "contract_id": {"type": "Integer", "constraints": "FOREIGN KEY → contracts.id, NOT NULL, ON DELETE CASCADE"},
+        "filename": {"type": "String(300)", "constraints": "NOT NULL", "description": "UUID 文件名（存储用）"},
+        "original_filename": {"type": "String(300)", "constraints": "NOT NULL", "description": "用户上传的原始文件名"},
+        "file_path": {"type": "String(500)", "constraints": "NOT NULL", "description": "相对于 uploads/ 的完整路径"},
+        "file_size": {"type": "Integer", "constraints": "NOT NULL", "description": "文件大小（字节）"},
+        "mime_type": {"type": "String(100)", "constraints": "NULLABLE"},
+        "uploaded_at": {"type": "DateTime", "constraints": "NOT NULL, DEFAULT CURRENT_TIMESTAMP"}
+      },
+      "relationships": {
+        "contract": "many-to-one → Contract"
+      },
+      "helper_methods": ["is_pdf()", "is_word()", "size_display()"]
+    }
+  },
+  "routes": [
+    {"method": "GET", "path": "/", "handler": "index", "auth_required": false, "description": "首页：已登录跳转仪表盘，未登录跳转登录页"},
+    {"method": "GET", "path": "/login", "handler": "login_form", "auth_required": false, "description": "登录页面"},
+    {"method": "POST", "path": "/login", "handler": "login", "auth_required": false, "description": "处理登录请求"},
+    {"method": "GET", "path": "/logout", "handler": "logout", "auth_required": true, "description": "退出登录"},
+    {"method": "GET", "path": "/register", "handler": "register_form", "auth_required": false, "description": "注册页面"},
+    {"method": "POST", "path": "/register", "handler": "register", "auth_required": false, "description": "处理注册请求"},
+    {"method": "GET", "path": "/dashboard", "handler": "dashboard", "auth_required": true, "description": "仪表盘（概览统计）"},
+    {"method": "GET", "path": "/users", "handler": "user_list", "auth_required": true, "description": "用户列表"},
+    {"method": "GET", "path": "/users/create", "handler": "user_create_form", "auth_required": true, "description": "创建用户表单"},
+    {"method": "POST", "path": "/users/create", "handler": "user_create", "auth_required": true, "description": "处理创建用户"},
+    {"method": "GET", "path": "/users/<int:id>/edit", "handler": "user_edit_form", "auth_required": true, "description": "编辑用户表单"},
+    {"method": "POST", "path": "/users/<int:id>/edit", "handler": "user_edit", "auth_required": true, "description": "处理编辑用户"},
+    {"method": "POST", "path": "/users/<int:id>/delete", "handler": "user_delete", "auth_required": true, "description": "删除用户"},
+    {"method": "GET", "path": "/contracts", "handler": "contract_list", "auth_required": true, "description": "合同列表"},
+    {"method": "GET", "path": "/contracts/create", "handler": "contract_create_form", "auth_required": true, "description": "创建合同表单"},
+    {"method": "POST", "path": "/contracts/create", "handler": "contract_create", "auth_required": true, "description": "处理创建合同"},
+    {"method": "GET", "path": "/contracts/<int:id>", "handler": "contract_detail", "auth_required": true, "description": "合同详情（含附件列表）"},
+    {"method": "GET", "path": "/contracts/<int:id>/edit", "handler": "contract_edit_form", "auth_required": true, "description": "编辑合同表单"},
+    {"method": "POST", "path": "/contracts/<int:id>/edit", "handler": "contract_edit", "auth_required": true, "description": "处理编辑合同"},
+    {"method": "POST", "path": "/contracts/<int:id>/delete", "handler": "contract_delete", "auth_required": true, "description": "删除合同"},
+    {"method": "POST", "path": "/contracts/<int:id>/attachments/upload", "handler": "attachment_upload", "auth_required": true, "description": "上传合同附件"},
+    {"method": "GET", "path": "/contracts/<int:id>/attachments/<int:aid>/download", "handler": "attachment_download", "auth_required": true, "description": "下载附件"},
+    {"method": "GET", "path": "/contracts/<int:id>/attachments/<int:aid>/view", "handler": "attachment_view", "auth_required": true, "description": "在线查看附件"},
+    {"method": "GET", "path": "/healthz", "handler": "healthz", "auth_required": false, "description": "健康检查端点"},
+    {"method": "GET", "path": "/static/<path:filename>", "handler": "static_files", "auth_required": false, "description": "静态资源（带 ?v=0.0.1 版本令牌）"}
+  ],
+  "pages": [
+    {"name": "base.html", "description": "基础布局模板：导航栏、flash 消息区、页脚、CSS/JS 引用。静态资源路径使用 /projects/contract-admin/static/ 前缀加 ?v=0.0.1"},
+    {"name": "login.html", "description": "登录表单页面"},
+    {"name": "register.html", "description": "注册表单页面"},
+    {"name": "dashboard.html", "description": "仪表盘：显示用户数、合同数、最近合同等概览信息"},
+    {"name": "users/list.html", "description": "用户列表：表格展示所有用户，含编辑和删除按钮"},
+    {"name": "users/form.html", "description": "用户表单：创建/编辑用户，含用户名、密码、角色字段"},
+    {"name": "contracts/list.html", "description": "合同列表：表格展示所有合同，含查看、编辑、删除按钮"},
+    {"name": "contracts/form.html", "description": "合同表单：创建/编辑合同，含名称、编号、金额、日期、状态字段"},
+    {"name": "contracts/detail.html", "description": "合同详情：显示完整合同信息 + 附件列表（上传、下载、在线查看）"}
+  ],
+  "file_structure": {
+    "app.py": "Flask 应用入口：创建 app、注册蓝图、配置 Flask-Login、定义所有路由和视图函数、错误处理",
+    "config.py": "配置类：SECRET_KEY、SQLALCHEMY_DATABASE_URI、UPLOAD_FOLDER、MAX_CONTENT_LENGTH (10MB)、APPLICATION_ROOT",
+    "models.py": "SQLAlchemy 模型定义：User（含 Flask-Login mixin）、Contract、Attachment",
+    "requirements.txt": "依赖清单：Flask、Flask-SQLAlchemy、Flask-Login、bcrypt、Werkzeug",
+    "init_db.py": "数据库初始化脚本：创建表结构、插入默认管理员 demo/demo123",
+    "templates/base.html": "Jinja2 基础模板",
+    "templates/login.html": "登录页模板",
+    "templates/register.html": "注册页模板",
+    "templates/dashboard.html": "仪表盘模板",
+    "templates/users/list.html": "用户列表模板",
+    "templates/users/form.html": "用户创建/编辑表单模板",
+    "templates/contracts/list.html": "合同列表模板",
+    "templates/contracts/form.html": "合同创建/编辑表单模板",
+    "templates/contracts/detail.html": "合同详情模板",
+    "static/css/style.css": "基础样式表",
+    "static/js/main.js": "基础 JavaScript",
+    "uploads/.gitkeep": "上传目录占位文件",
+    "evidence/claude/technical-plan-0.0.1.json": "本技术方案文件",
+    "evidence/claude/tasks-0.0.1.json": "任务拆解文件",
+    "evidence/claude/handoff-0.0.1.json": "自测交付文件"
+  }
+}
